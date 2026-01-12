@@ -11,6 +11,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "express": "^4.22.1"
+    "express": "^4.22.1",
+    "mongodb": "^7.0.0"
   }
 }
