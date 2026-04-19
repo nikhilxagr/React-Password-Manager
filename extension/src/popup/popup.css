@@ -1,0 +1,121 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-width: 340px;
+    background: radial-gradient(circle at top right, #f3f7ff 0%, #e8eeff 38%, #d9e4ff 100%);
+    font-family: Segoe UI, Tahoma, sans-serif;
+    color: #0f1f4a;
+}
+
+.popup-shell {
+    padding: 16px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 22px;
+}
+
+header p {
+    margin: 4px 0;
+}
+
+.eyebrow {
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: #4565a8;
+}
+
+.panel {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(126, 149, 205, 0.32);
+}
+
+.hidden {
+    display: none;
+}
+
+label {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 6px;
+    color: #324e8f;
+}
+
+input {
+    width: 100%;
+    border: 1px solid #c8d4f8;
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-size: 13px;
+    color: #152755;
+    background: #f9fbff;
+}
+
+input:focus {
+    outline: none;
+    border-color: #6787d6;
+}
+
+button {
+    border: 0;
+    border-radius: 8px;
+    padding: 9px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(120deg, #2f65c7, #4f8ae6);
+}
+
+button.danger {
+    background: linear-gradient(120deg, #b2364e, #d15168);
+}
+
+form button {
+    margin-top: 10px;
+    width: 100%;
+}
+
+.row {
+    display: flex;
+    gap: 8px;
+}
+
+.row input {
+    flex: 1;
+}
+
+#matchesList {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+#matchesList li {
+    border-radius: 10px;
+    background: #f4f7ff;
+    border: 1px solid #d3ddfb;
+    padding: 8px;
+}
+
+#matchesList strong {
+    display: block;
+    font-size: 12px;
+}
+
+#matchesList span {
+    display: block;
+    color: #4e639f;
+    font-size: 11px;
+}

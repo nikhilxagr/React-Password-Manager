@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "PassMongo Autofill",
+  "version": "0.1.0",
+  "description": "Browser autofill companion for the PassMongo vault.",
+  "permissions": ["storage", "activeTab", "tabs", "alarms"],
+  "host_permissions": ["http://localhost:3000/*", "https://*/*", "http://*/*"],
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "PassMongo Vault",
+    "default_popup": "src/popup/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*/*", "http://*/*"],
+      "js": ["src/content/content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/content/content-style.css"],
+      "matches": ["https://*/*", "http://*/*"]
+    }
+  ]
+}

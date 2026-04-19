@@ -1,0 +1,59 @@
+.passmongo-suggestions {
+  position: absolute;
+  z-index: 2147483647;
+  min-width: 260px;
+  max-width: 360px;
+  border: 1px solid #d7e0ff;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(13, 26, 62, 0.18);
+  padding: 8px;
+  font-family: Segoe UI, Tahoma, sans-serif;
+}
+
+.passmongo-suggestions h4 {
+  margin: 0 0 8px;
+  padding: 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #304171;
+  text-transform: uppercase;
+}
+
+.passmongo-item {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  background: #f5f8ff;
+  text-align: left;
+  cursor: pointer;
+  padding: 8px;
+  margin-bottom: 6px;
+}
+
+.passmongo-item:last-child {
+  margin-bottom: 0;
+}
+
+.passmongo-item strong {
+  display: block;
+  color: #15244f;
+  font-size: 13px;
+}
+
+.passmongo-item span {
+  color: #4e5f91;
+  font-size: 12px;
+}
+
+.passmongo-item:hover {
+  background: #e6edff;
+}
+
+.passmongo-empty {
+  margin: 0;
+  font-size: 12px;
+  color: #4e5f91;
+  padding: 2px 4px;
+}

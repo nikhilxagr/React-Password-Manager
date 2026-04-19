@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PassMongo</title>
+    <link rel="stylesheet" href="./popup.css" />
+</head>
+
+<body>
+    <main class="popup-shell">
+        <header>
+            <p class="eyebrow">PassMongo</p>
+            <h1>Vault Control</h1>
+            <p id="statusText">Checking vault status...</p>
+        </header>
+
+        <section class="panel">
+            <label for="apiBase">Backend API</label>
+            <div class="row">
+                <input id="apiBase" type="text" placeholder="http://localhost:3000/api/v1" />
+                <button id="saveApiBase" type="button">Save</button>
+            </div>
+        </section>
+
+        <section class="panel" id="unlockPanel">
+            <form id="unlockForm">
+                <label for="masterPassword">Master password</label>
+                <input id="masterPassword" type="password" minlength="8" required />
+                <button type="submit">Unlock vault</button>
+            </form>
+        </section>
+
+        <section class="panel hidden" id="actionsPanel">
+            <p id="activeDomain">Current site: unavailable</p>
+            <div class="row">
+                <button id="refreshMatches" type="button">Refresh Matches</button>
+                <button id="lockVault" type="button" class="danger">Lock</button>
+            </div>
+        </section>
+
+        <section class="panel hidden" id="matchesPanel">
+            <h2>Site Matches</h2>
+            <ul id="matchesList"></ul>
+        </section>
+    </main>
+
+    <script type="module" src="./popup.js"></script>
+</body>
+
+</html>
