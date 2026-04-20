@@ -5,19 +5,21 @@
 @tailwind utilities;
 
 :root {
-  --bg: #f5f3ed;
-  --bg-accent: #e6e9e0;
-  --panel: rgba(255, 255, 255, 0.72);
+  --bg: #f6f2e9;
+  --bg-accent: #ece6d8;
+  --panel: rgba(255, 255, 255, 0.9);
   --panel-solid: #ffffff;
-  --ink: #1d2330;
-  --ink-soft: #546072;
-  --brand: #1f7a65;
-  --brand-strong: #135543;
+  --ink: #1f2733;
+  --ink-soft: #5c6676;
+  --brand: #2f6f5d;
+  --brand-strong: #1f4f42;
   --danger: #b84040;
-  --line: rgba(29, 35, 48, 0.12);
-  --shadow-soft: 0 24px 56px rgba(28, 37, 54, 0.12);
-  --radius-lg: 18px;
-  --radius-md: 12px;
+  --line: rgba(25, 34, 47, 0.14);
+  --line-soft: rgba(25, 34, 47, 0.08);
+  --shadow-soft: 0 16px 44px rgba(35, 45, 63, 0.1);
+  --radius-xl: 22px;
+  --radius-lg: 16px;
+  --radius-md: 11px;
 }
 
 * {
@@ -30,9 +32,7 @@ body {
   color: var(--ink);
   font-family: "IBM Plex Sans", sans-serif;
   background:
-    radial-gradient(circle at 12% -8%, #ced9c2 0%, transparent 38%),
-    radial-gradient(circle at 85% 0%, #d3e5df 0%, transparent 30%),
-    linear-gradient(180deg, #f8f5ef 0%, #f0ece4 100%);
+    linear-gradient(180deg, #faf6ee 0%, #f3ecdf 100%);
 }
 
 body::before {
@@ -40,10 +40,9 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image: linear-gradient(var(--line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--line) 1px, transparent 1px);
-  background-size: 42px 42px;
-  opacity: 0.2;
+  background:
+    radial-gradient(circle at 16% 10%, rgba(47, 111, 93, 0.1) 0%, transparent 35%),
+    radial-gradient(circle at 86% 0%, rgba(176, 144, 95, 0.1) 0%, transparent 28%);
   z-index: -1;
 }
 
@@ -59,22 +58,22 @@ body::before {
 
 .app-main {
   flex: 1;
-  width: min(1200px, 92vw);
-  margin: 1.6rem auto 2rem;
+  width: min(1180px, 92vw);
+  margin: 1.3rem auto 2.2rem;
 }
 
 .topbar {
-  padding: 1.2rem 0;
+  padding: 1rem 0 0.35rem;
 }
 
 .topbar-inner {
-  width: min(1200px, 92vw);
+  width: min(1180px, 92vw);
   margin: 0 auto;
-  padding: 1rem 1.4rem;
+  padding: 0.95rem 1.3rem;
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   background: var(--panel);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(5px);
   box-shadow: var(--shadow-soft);
   display: flex;
   align-items: center;
@@ -82,22 +81,55 @@ body::before {
   gap: 1rem;
 }
 
+.brand-wrap {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.brand-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.72rem;
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #ffffff;
+  background: linear-gradient(145deg, var(--brand-strong), var(--brand));
+  box-shadow: 0 10px 20px rgba(31, 79, 66, 0.25);
+}
+
 .brand-kicker {
   margin: 0;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-size: 0.73rem;
+  font-size: 0.71rem;
   color: var(--ink-soft);
 }
 
 .topbar h1 {
-  margin: 0.22rem 0 0;
-  font-size: clamp(1.4rem, 1.2rem + 1vw, 2rem);
+  margin: 0.05rem 0 0;
+  font-size: clamp(1.2rem, 1.08rem + 0.85vw, 1.7rem);
   font-family: "Space Grotesk", sans-serif;
 }
 
 .topbar h1 span {
   color: var(--brand-strong);
+}
+
+.topbar-note {
+  margin: 0.35rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.93rem;
 }
 
 .topbar-link {
@@ -110,13 +142,14 @@ body::before {
   font-weight: 600;
   background: var(--panel-solid);
   border-radius: 999px;
-  padding: 0.58rem 0.95rem;
-  transition: transform 150ms ease, box-shadow 150ms ease;
+  padding: 0.55rem 0.92rem;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
 }
 
 .topbar-link:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 25px rgba(22, 38, 52, 0.15);
+  border-color: rgba(31, 79, 66, 0.35);
+  box-shadow: 0 8px 22px rgba(22, 38, 52, 0.12);
 }
 
 .topbar-link img {
@@ -127,16 +160,16 @@ body::before {
 .vault-panel,
 .manager-shell {
   border: 1px solid var(--line);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   background: var(--panel);
   box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(5px);
 }
 
 .vault-panel {
   width: min(620px, 94vw);
-  margin: 4rem auto 0;
-  padding: 2rem;
+  margin: 3.5rem auto 0;
+  padding: 1.9rem;
 }
 
 .vault-title {
@@ -171,10 +204,11 @@ body::before {
 .filters select {
   border-radius: var(--radius-md);
   border: 1px solid var(--line);
-  padding: 0.7rem 0.8rem;
+  padding: 0.7rem 0.82rem;
   font-size: 0.96rem;
   color: var(--ink);
   background: #fff;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 
 .vault-form input:focus,
@@ -182,8 +216,9 @@ body::before {
 .credential-form textarea:focus,
 .filters input:focus,
 .filters select:focus {
-  outline: 2px solid rgba(31, 122, 101, 0.28);
-  outline-offset: 1px;
+  outline: none;
+  border-color: rgba(31, 79, 66, 0.5);
+  box-shadow: 0 0 0 3px rgba(47, 111, 93, 0.16);
 }
 
 .btn-primary,
@@ -192,15 +227,21 @@ body::before {
   border: 0;
   font: inherit;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease,
+    border-color 140ms ease;
 }
 
 .btn-primary {
   border-radius: 999px;
-  padding: 0.72rem 1.2rem;
+  padding: 0.68rem 1.18rem;
   color: #fff;
   font-weight: 600;
-  background: linear-gradient(120deg, var(--brand-strong), var(--brand));
-  box-shadow: 0 10px 22px rgba(20, 88, 70, 0.27);
+  border: 1px solid var(--brand-strong);
+  background: var(--brand-strong);
+  box-shadow: 0 8px 20px rgba(23, 71, 58, 0.25);
 }
 
 .btn-primary:disabled {
@@ -208,34 +249,62 @@ body::before {
   cursor: not-allowed;
 }
 
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px rgba(23, 71, 58, 0.26);
+}
+
 .btn-ghost {
   border-radius: 999px;
-  padding: 0.64rem 1.05rem;
+  padding: 0.62rem 1rem;
   border: 1px solid var(--line);
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.92);
   color: var(--ink);
   font-weight: 600;
 }
 
+.btn-ghost:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(31, 79, 66, 0.35);
+}
+
 .btn-inline {
   border-radius: 10px;
-  padding: 0.58rem 0.66rem;
+  padding: 0.58rem 0.64rem;
   border: 1px solid var(--line);
   background: #ffffff;
   color: var(--ink-soft);
   white-space: nowrap;
 }
 
+.btn-inline:hover {
+  border-color: rgba(31, 79, 66, 0.35);
+  color: var(--ink);
+}
+
+.btn-compact {
+  padding: 0.48rem 0.8rem;
+  font-size: 0.88rem;
+}
+
 .manager-shell {
-  padding: 1.2rem;
+  padding: 1.25rem;
 }
 
 .manager-header {
   display: flex;
-  align-items: start;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.manager-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.55rem;
 }
 
 .eyebrow {
@@ -260,7 +329,7 @@ body::before {
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: 0.8rem;
 }
 
 .stat-card {
@@ -268,6 +337,16 @@ body::before {
   background: #ffffff;
   border-radius: var(--radius-lg);
   padding: 0.95rem;
+  position: relative;
+}
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  left: 0.95rem;
+  right: 0.95rem;
+  top: 0;
+  border-top: 2px solid rgba(47, 111, 93, 0.2);
 }
 
 .stat-card h3 {
@@ -287,11 +366,11 @@ body::before {
 }
 
 .legacy-callout {
-  margin-top: 1rem;
-  border: 1px dashed rgba(31, 122, 101, 0.5);
+  margin-top: 1.05rem;
+  border: 1px solid rgba(47, 111, 93, 0.35);
   border-radius: var(--radius-lg);
-  padding: 0.9rem;
-  background: rgba(246, 255, 252, 0.8);
+  padding: 0.9rem 1rem;
+  background: rgba(246, 251, 248, 0.88);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -308,10 +387,11 @@ body::before {
 }
 
 .workspace-grid {
-  margin-top: 1rem;
+  margin-top: 1.1rem;
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  grid-template-columns: minmax(300px, 390px) minmax(0, 1fr);
+  align-items: start;
 }
 
 .editor-card,
@@ -320,6 +400,7 @@ body::before {
   border-radius: var(--radius-lg);
   background: #ffffff;
   padding: 1rem;
+  box-shadow: 0 4px 14px rgba(33, 44, 58, 0.04);
 }
 
 .card-head {
@@ -327,7 +408,7 @@ body::before {
   align-items: center;
   justify-content: space-between;
   gap: 0.8rem;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.9rem;
 }
 
 .card-head h3 {
@@ -336,9 +417,19 @@ body::before {
   font-size: 1.12rem;
 }
 
+.card-head-list {
+  align-items: flex-start;
+}
+
+.card-subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
 .credential-form {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.8rem;
 }
 
 .password-row {
@@ -361,7 +452,7 @@ body::before {
   overflow: hidden;
 }
 
-.strength-bar > div {
+.strength-bar>div {
   height: 100%;
   background: linear-gradient(120deg, #cc4a4a, #dd8f3b, #1f7a65);
   transition: width 180ms ease;
@@ -385,15 +476,29 @@ body::before {
   white-space: nowrap;
 }
 
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.1rem;
+}
+
+.form-actions .btn-primary {
+  min-width: 170px;
+}
+
 .filters {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 165px auto;
+  grid-template-columns: minmax(0, 1fr) 180px auto;
   gap: 0.6rem;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.85rem;
 }
 
 .table-wrap {
   overflow: auto;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
 }
 
 table {
@@ -409,13 +514,18 @@ thead th {
   color: var(--ink-soft);
   border-bottom: 1px solid var(--line);
   text-align: left;
-  padding: 0.72rem 0.45rem;
+  padding: 0.72rem 0.55rem;
+  background: #fafaf9;
 }
 
 tbody td {
-  border-bottom: 1px solid rgba(29, 35, 48, 0.09);
-  padding: 0.75rem 0.45rem;
+  border-bottom: 1px solid var(--line-soft);
+  padding: 0.78rem 0.55rem;
   vertical-align: top;
+}
+
+tbody tr:hover {
+  background: #fafcfb;
 }
 
 tbody a {
@@ -424,17 +534,37 @@ tbody a {
 }
 
 .btn-link {
-  margin-left: 0.5rem;
   border: 0;
   background: transparent;
   cursor: pointer;
   color: var(--brand-strong);
   font-weight: 600;
   padding: 0;
+  margin-left: 0.45rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .btn-link.danger {
   color: var(--danger);
+}
+
+.action-row .btn-link {
+  margin-left: 0;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.24rem 0.58rem;
+  background: #fff;
+}
+
+.action-row .btn-link:hover {
+  border-color: rgba(31, 79, 66, 0.35);
+}
+
+.action-row .btn-link.danger {
+  border-color: rgba(184, 64, 64, 0.35);
+  background: #fff6f6;
 }
 
 .secret-pill {
@@ -468,12 +598,12 @@ tbody a {
 }
 
 .footer {
-  width: min(1200px, 92vw);
+  width: min(1180px, 92vw);
   margin: 0 auto 1.2rem;
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--line);
   padding: 0.9rem 1.1rem;
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.82);
   color: var(--ink-soft);
   text-align: center;
 }
@@ -489,6 +619,7 @@ tbody a {
 }
 
 @media (max-width: 780px) {
+
   .topbar-inner,
   .manager-shell,
   .vault-panel,
@@ -501,9 +632,18 @@ tbody a {
     align-items: flex-start;
   }
 
+  .brand-title-row {
+    align-items: flex-start;
+  }
+
   .manager-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .manager-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .stats-grid {
@@ -519,6 +659,22 @@ tbody a {
   .filters,
   .password-row {
     grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-actions .btn-primary,
+  .form-actions .btn-ghost,
+  .card-head-list .btn-ghost {
+    width: 100%;
+  }
+
+  .card-head-list {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .table-wrap {

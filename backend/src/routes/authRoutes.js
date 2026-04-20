@@ -6,11 +6,13 @@ const {
   unlockVaultController,
   lockVaultController,
   vaultStatusController,
+  vaultKdfParamsController,
 } = require("../controllers/authController");
 
 const router = express.Router();
 
 router.get("/status", asyncHandler(vaultStatusController));
+router.get("/kdf-params", asyncHandler(vaultKdfParamsController));
 router.post("/setup", asyncHandler(setupVaultController));
 router.post("/unlock", asyncHandler(unlockVaultController));
 router.post("/lock", requireVaultSession, asyncHandler(lockVaultController));

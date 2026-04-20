@@ -3,6 +3,7 @@ const {
   unlockVault,
   lockSession,
   getVaultStatus,
+  getVaultKdfParams,
 } = require("../services/vaultService");
 const {
   validateMasterPassword,
@@ -64,9 +65,19 @@ const vaultStatusController = async (req, res) => {
   });
 };
 
+const vaultKdfParamsController = async (_req, res) => {
+  const data = await getVaultKdfParams();
+
+  return res.status(200).json({
+    ok: true,
+    data,
+  });
+};
+
 module.exports = {
   setupVaultController,
   unlockVaultController,
   lockVaultController,
   vaultStatusController,
+  vaultKdfParamsController,
 };
