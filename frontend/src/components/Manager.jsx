@@ -5,6 +5,8 @@ import { api } from "../lib/api";
 import { estimateStrength, generateStrongPassword } from "../utils/password";
 
 const TOKEN_KEY = "vault_session_token";
+const ACCOUNT_TOKEN_KEY = "account_access_token";
+const ACCOUNT_EMAIL_KEY = "account_email";
 const LEGACY_IMPORT_KEY = "legacy_import_done_v1";
 
 const initialFormState = {
@@ -44,6 +46,21 @@ const Manager = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [token, setToken] = useState("");
+  const [accountToken, setAccountToken] = useState("");
+  const [accountEmail, setAccountEmail] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authMode, setAuthMode] = useState("login");
+  const [authForm, setAuthForm] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [resetForm, setResetForm] = useState({
+    email: "",
+    token: "",
+    password: "",
+    confirmPassword: "",
+  });
 
   const [setupForm, setSetupForm] = useState({
     masterPassword: "",
@@ -119,9 +136,27 @@ const Manager = () => {
     setRevealedSecrets({});
   }, []);
 
+  const clearAccount = useCallback(() => {
+    localStorage.removeItem(ACCOUNT_TOKEN_KEY);
+    localStorage.removeItem(ACCOUNT_EMAIL_KEY);
+    setAccountToken("");
+    setAccountEmail("");
+    setIsAuthenticated(false);
+    setIsInitialized(false);
+    setAuthMode("login");
+    setAuthForm({ email: "", password: "", confirmPassword: "" });
+    setResetForm({
+      email: "",
+      token: "",
+      password: "",
+      confirmPassword: "",
+    });
+    clearSession();
+  }, [clearSession]);
+
   const fetchCredentials = useCallback(
-    async (authToken) => {
-      if (!authToken) {
+    async (accessToken, vaultToken) => {
+      if (!accessToken || !vaultToken) {
         return;
       }
 
@@ -132,7 +167,11 @@ const Manager = () => {
           favorite: favoriteOnly ? true : undefined,
           category: categoryFilter === "All" ? undefined : categoryFilter,
         };
-        const response = await api.credentials.list(authToken, query);
+        const response = await api.credentials.list(
+          accessToken,
+          vaultToken,
+          query,
+        );
         setCredentials(response.data || []);
       } catch (error) {
         if (error.status === 401) {
@@ -148,50 +187,80 @@ const Manager = () => {
 
   useEffect(() => {
     const initialize = async () => {
-      const storedToken = localStorage.getItem(TOKEN_KEY) || "";
+      const storedAccountToken = localStorage.getItem(ACCOUNT_TOKEN_KEY) || "";
+      const storedVaultToken = localStorage.getItem(TOKEN_KEY) || "";
 
       try {
-        const response = await api.auth.status(storedToken || undefined);
-        const status = response.data;
+        if (!storedAccountToken) {
+          setIsBooting(false);
+          return;
+        }
 
+        const meResponse = await api.account.me(storedAccountToken);
+        const user = meResponse.data?.user;
+
+        setAccountToken(storedAccountToken);
+        setAccountEmail(
+          user?.email || localStorage.getItem(ACCOUNT_EMAIL_KEY) || "",
+        );
+        setIsAuthenticated(true);
+
+        const statusResponse = await api.auth.status(
+          storedAccountToken,
+          storedVaultToken || undefined,
+        );
+        const status = statusResponse.data;
         setIsInitialized(Boolean(status.initialized));
 
-        if (status.initialized && storedToken && status.unlocked) {
-          setToken(storedToken);
+        if (status.initialized && storedVaultToken && status.unlocked) {
+          setToken(storedVaultToken);
           setIsUnlocked(true);
-          await fetchCredentials(storedToken);
+          await fetchCredentials(storedAccountToken, storedVaultToken);
         } else {
           clearSession();
         }
       } catch (error) {
-        toast.error(error.message || "Failed to bootstrap vault status.");
+        clearAccount();
+        toast.error(error.message || "Failed to bootstrap account.");
       } finally {
         setIsBooting(false);
       }
     };
 
     initialize();
-  }, [fetchCredentials, clearSession]);
+  }, [fetchCredentials, clearSession, clearAccount]);
 
   useEffect(() => {
-    if (!isUnlocked || !token) {
+    const params = new URLSearchParams(window.location.search);
+    const tokenParam = params.get("token");
+    if (tokenParam) {
+      setResetForm((current) => ({
+        ...current,
+        token: tokenParam,
+      }));
+      setAuthMode("reset-confirm");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isUnlocked || !token || !accountToken) {
       return;
     }
 
     const timeoutId = setTimeout(() => {
-      fetchCredentials(token);
+      fetchCredentials(accountToken, token);
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [isUnlocked, token, fetchCredentials]);
+  }, [isUnlocked, token, accountToken, fetchCredentials]);
 
   const handleSetupSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
 
     try {
-      await api.auth.setup(setupForm);
-      const unlockResponse = await api.auth.unlock({
+      await api.auth.setup(accountToken, setupForm);
+      const unlockResponse = await api.auth.unlock(accountToken, {
         masterPassword: setupForm.masterPassword,
       });
       const newToken = unlockResponse.data.token;
@@ -202,9 +271,117 @@ const Manager = () => {
       setIsUnlocked(true);
       setSetupForm({ masterPassword: "", confirmMasterPassword: "" });
       toast.success("Vault created and unlocked.");
-      await fetchCredentials(newToken);
+      await fetchCredentials(accountToken, newToken);
     } catch (error) {
       toast.error(error.message || "Failed to create vault.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSignupSubmit = async (event) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const response = await api.account.signup(authForm);
+      const { token: newToken, user } = response.data;
+
+      localStorage.setItem(ACCOUNT_TOKEN_KEY, newToken);
+      localStorage.setItem(ACCOUNT_EMAIL_KEY, user.email);
+      setAccountToken(newToken);
+      setAccountEmail(user.email);
+      setIsAuthenticated(true);
+      setAuthForm({ email: "", password: "", confirmPassword: "" });
+      clearSession();
+
+      const statusResponse = await api.auth.status(newToken, undefined);
+      setIsInitialized(Boolean(statusResponse.data?.initialized));
+      toast.success("Account created.");
+    } catch (error) {
+      toast.error(error.message || "Failed to create account.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLoginSubmit = async (event) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const response = await api.account.login({
+        email: authForm.email,
+        password: authForm.password,
+      });
+      const { token: newToken, user } = response.data;
+
+      localStorage.setItem(ACCOUNT_TOKEN_KEY, newToken);
+      localStorage.setItem(ACCOUNT_EMAIL_KEY, user.email);
+      setAccountToken(newToken);
+      setAccountEmail(user.email);
+      setIsAuthenticated(true);
+      setAuthForm({ email: "", password: "", confirmPassword: "" });
+      clearSession();
+
+      const statusResponse = await api.auth.status(newToken, undefined);
+      setIsInitialized(Boolean(statusResponse.data?.initialized));
+      toast.success("Welcome back.");
+    } catch (error) {
+      toast.error(error.message || "Failed to login.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      if (accountToken) {
+        await api.account.logout(accountToken);
+      }
+    } catch {
+      // Ignore logout API errors.
+    } finally {
+      clearAccount();
+      toast.info("Logged out.");
+    }
+  };
+
+  const handlePasswordResetRequest = async (event) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      await api.account.requestPasswordReset({ email: resetForm.email });
+      toast.success("If that email exists, a reset link was sent.");
+      setAuthMode("login");
+    } catch (error) {
+      toast.error(error.message || "Failed to request reset link.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePasswordResetConfirm = async (event) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      await api.account.confirmPasswordReset({
+        token: resetForm.token,
+        password: resetForm.password,
+        confirmPassword: resetForm.confirmPassword,
+      });
+      setResetForm({
+        email: "",
+        token: "",
+        password: "",
+        confirmPassword: "",
+      });
+      setAuthMode("login");
+      toast.success("Password updated. Please login.");
+    } catch (error) {
+      toast.error(error.message || "Failed to reset password.");
     } finally {
       setIsSubmitting(false);
     }
@@ -215,7 +392,7 @@ const Manager = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await api.auth.unlock({
+      const response = await api.auth.unlock(accountToken, {
         masterPassword: unlockPassword,
       });
       const newToken = response.data.token;
@@ -225,7 +402,7 @@ const Manager = () => {
       setIsUnlocked(true);
       setUnlockPassword("");
       toast.success("Vault unlocked.");
-      await fetchCredentials(newToken);
+      await fetchCredentials(accountToken, newToken);
     } catch (error) {
       toast.error(error.message || "Failed to unlock vault.");
     } finally {
@@ -235,8 +412,8 @@ const Manager = () => {
 
   const handleLock = async () => {
     try {
-      if (token) {
-        await api.auth.lock(token);
+      if (token && accountToken) {
+        await api.auth.lock(accountToken, token);
       }
     } catch {
       // Ignore lock API failure and clear local session anyway.
@@ -246,7 +423,7 @@ const Manager = () => {
     }
   };
 
-  const resetForm = () => {
+  const resetCredentialForm = () => {
     setEditingId(null);
     setForm(initialFormState);
     setShowFormPassword(false);
@@ -279,15 +456,15 @@ const Manager = () => {
     setIsSubmitting(true);
     try {
       if (editingId) {
-        await api.credentials.update(token, editingId, payload);
+        await api.credentials.update(accountToken, token, editingId, payload);
         toast.success("Credential updated.");
       } else {
-        await api.credentials.create(token, payload);
+        await api.credentials.create(accountToken, token, payload);
         toast.success("Credential saved.");
       }
 
-      resetForm();
-      await fetchCredentials(token);
+      resetCredentialForm();
+      await fetchCredentials(accountToken, token);
     } catch (error) {
       toast.error(error.message || "Failed to save credential.");
     } finally {
@@ -315,14 +492,14 @@ const Manager = () => {
     }
 
     try {
-      await api.credentials.delete(token, id);
+      await api.credentials.delete(accountToken, token, id);
       setRevealedSecrets((current) => {
         const next = { ...current };
         delete next[id];
         return next;
       });
       toast.success("Credential deleted.");
-      await fetchCredentials(token);
+      await fetchCredentials(accountToken, token);
     } catch (error) {
       toast.error(error.message || "Failed to delete credential.");
     }
@@ -339,12 +516,12 @@ const Manager = () => {
     }
 
     try {
-      const response = await api.credentials.secret(token, id);
+      const response = await api.credentials.secret(accountToken, token, id);
       setRevealedSecrets((current) => ({
         ...current,
         [id]: response.data.password,
       }));
-      api.credentials.touch(token, id).catch(() => {
+      api.credentials.touch(accountToken, token, id).catch(() => {
         // No-op: this metadata update should not block UX.
       });
     } catch (error) {
@@ -379,13 +556,273 @@ const Manager = () => {
         return;
       }
 
-      const response = await api.credentials.importLegacy(token, normalized);
+      const response = await api.credentials.importLegacy(
+        accountToken,
+        token,
+        normalized,
+      );
       localStorage.setItem(LEGACY_IMPORT_KEY, "true");
       toast.success(`Imported ${response.data.importedCount} legacy entries.`);
-      await fetchCredentials(token);
+      await fetchCredentials(accountToken, token);
     } catch (error) {
       toast.error(error.message || "Failed to import legacy credentials.");
     }
+  };
+
+  const renderAccountLogin = () => (
+    <section className="vault-panel">
+      <h2 className="vault-title">Login to VaultGuard</h2>
+      <p className="vault-subtitle">
+        Sign in to your account to access your personal vault.
+      </p>
+      <form onSubmit={handleLoginSubmit} className="vault-form">
+        <label>
+          Email address
+          <input
+            type="email"
+            value={authForm.email}
+            onChange={(event) =>
+              setAuthForm((current) => ({
+                ...current,
+                email: event.target.value,
+              }))
+            }
+            required
+            placeholder="you@example.com"
+          />
+        </label>
+        <label>
+          Password
+          <input
+            type="password"
+            value={authForm.password}
+            onChange={(event) =>
+              setAuthForm((current) => ({
+                ...current,
+                password: event.target.value,
+              }))
+            }
+            required
+            minLength={8}
+            placeholder="Enter your password"
+          />
+        </label>
+        <button type="submit" className="btn-primary" disabled={isSubmitting}>
+          {isSubmitting ? "Signing in..." : "Sign in"}
+        </button>
+        <div className="form-actions">
+          <button
+            type="button"
+            className="btn-link"
+            onClick={() => setAuthMode("signup")}
+          >
+            Create an account
+          </button>
+          <button
+            type="button"
+            className="btn-link"
+            onClick={() => setAuthMode("reset-request")}
+          >
+            Forgot password?
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+
+  const renderAccountSignup = () => (
+    <section className="vault-panel">
+      <h2 className="vault-title">Create your account</h2>
+      <p className="vault-subtitle">
+        Your vault stays personal to your account. Create login credentials to
+        get started.
+      </p>
+      <form onSubmit={handleSignupSubmit} className="vault-form">
+        <label>
+          Email address
+          <input
+            type="email"
+            value={authForm.email}
+            onChange={(event) =>
+              setAuthForm((current) => ({
+                ...current,
+                email: event.target.value,
+              }))
+            }
+            required
+            placeholder="you@example.com"
+          />
+        </label>
+        <label>
+          Password
+          <input
+            type="password"
+            value={authForm.password}
+            onChange={(event) =>
+              setAuthForm((current) => ({
+                ...current,
+                password: event.target.value,
+              }))
+            }
+            required
+            minLength={8}
+            placeholder="At least 8 characters"
+          />
+        </label>
+        <label>
+          Confirm password
+          <input
+            type="password"
+            value={authForm.confirmPassword}
+            onChange={(event) =>
+              setAuthForm((current) => ({
+                ...current,
+                confirmPassword: event.target.value,
+              }))
+            }
+            required
+            minLength={8}
+            placeholder="Repeat your password"
+          />
+        </label>
+        <button type="submit" className="btn-primary" disabled={isSubmitting}>
+          {isSubmitting ? "Creating account..." : "Create account"}
+        </button>
+        <div className="form-actions">
+          <button
+            type="button"
+            className="btn-link"
+            onClick={() => setAuthMode("login")}
+          >
+            I already have an account
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+
+  const renderPasswordResetRequest = () => (
+    <section className="vault-panel">
+      <h2 className="vault-title">Reset account password</h2>
+      <p className="vault-subtitle">
+        Enter your account email to receive a reset link.
+      </p>
+      <form onSubmit={handlePasswordResetRequest} className="vault-form">
+        <label>
+          Email address
+          <input
+            type="email"
+            value={resetForm.email}
+            onChange={(event) =>
+              setResetForm((current) => ({
+                ...current,
+                email: event.target.value,
+              }))
+            }
+            required
+            placeholder="you@example.com"
+          />
+        </label>
+        <button type="submit" className="btn-primary" disabled={isSubmitting}>
+          {isSubmitting ? "Sending..." : "Send reset link"}
+        </button>
+        <div className="form-actions">
+          <button
+            type="button"
+            className="btn-link"
+            onClick={() => setAuthMode("login")}
+          >
+            Back to login
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+
+  const renderPasswordResetConfirm = () => (
+    <section className="vault-panel">
+      <h2 className="vault-title">Choose a new password</h2>
+      <p className="vault-subtitle">
+        Enter the reset token and a new account password.
+      </p>
+      <form onSubmit={handlePasswordResetConfirm} className="vault-form">
+        <label>
+          Reset token
+          <input
+            type="text"
+            value={resetForm.token}
+            onChange={(event) =>
+              setResetForm((current) => ({
+                ...current,
+                token: event.target.value,
+              }))
+            }
+            required
+            placeholder="Paste the token from email"
+          />
+        </label>
+        <label>
+          New password
+          <input
+            type="password"
+            value={resetForm.password}
+            onChange={(event) =>
+              setResetForm((current) => ({
+                ...current,
+                password: event.target.value,
+              }))
+            }
+            required
+            minLength={8}
+            placeholder="At least 8 characters"
+          />
+        </label>
+        <label>
+          Confirm new password
+          <input
+            type="password"
+            value={resetForm.confirmPassword}
+            onChange={(event) =>
+              setResetForm((current) => ({
+                ...current,
+                confirmPassword: event.target.value,
+              }))
+            }
+            required
+            minLength={8}
+            placeholder="Repeat your password"
+          />
+        </label>
+        <button type="submit" className="btn-primary" disabled={isSubmitting}>
+          {isSubmitting ? "Updating..." : "Update password"}
+        </button>
+        <div className="form-actions">
+          <button
+            type="button"
+            className="btn-link"
+            onClick={() => setAuthMode("login")}
+          >
+            Back to login
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+
+  const renderAccountGate = () => {
+    if (authMode === "signup") {
+      return renderAccountSignup();
+    }
+
+    if (authMode === "reset-request") {
+      return renderPasswordResetRequest();
+    }
+
+    if (authMode === "reset-confirm") {
+      return renderPasswordResetConfirm();
+    }
+
+    return renderAccountLogin();
   };
 
   const renderVaultSetup = () => {
@@ -475,6 +912,15 @@ const Manager = () => {
     );
   }
 
+  if (!isAuthenticated) {
+    return (
+      <>
+        <ToastContainer position="top-right" autoClose={2800} theme="colored" />
+        {renderAccountGate()}
+      </>
+    );
+  }
+
   if (!isInitialized) {
     return (
       <>
@@ -502,6 +948,9 @@ const Manager = () => {
           <div>
             <p className="eyebrow">Secure Workspace</p>
             <h2>Password Vault Dashboard</h2>
+            {accountEmail && (
+              <p className="manager-subtitle">Signed in as {accountEmail}</p>
+            )}
             <p>
               Manage, search, and rotate credentials with encrypted storage.
               Keep every account in one place and access it in seconds.
@@ -523,6 +972,9 @@ const Manager = () => {
             </button>
             <button onClick={handleLock} className="btn-ghost" type="button">
               Lock vault
+            </button>
+            <button onClick={handleLogout} className="btn-ghost" type="button">
+              Log out
             </button>
           </div>
         </header>
@@ -565,7 +1017,11 @@ const Manager = () => {
             <div className="card-head">
               <h3>{editingId ? "Edit credential" : "Add credential"}</h3>
               {editingId && (
-                <button type="button" className="btn-link" onClick={resetForm}>
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={resetCredentialForm}
+                >
                   Cancel edit
                 </button>
               )}
@@ -728,7 +1184,7 @@ const Manager = () => {
                 <button
                   type="button"
                   className="btn-ghost"
-                  onClick={resetForm}
+                  onClick={resetCredentialForm}
                   disabled={isSubmitting}
                 >
                   {editingId ? "Discard changes" : "Clear form"}

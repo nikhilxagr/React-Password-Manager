@@ -1,6 +1,6 @@
 const express = require("express");
 const { asyncHandler } = require("../middlewares/asyncHandler");
-const { requireVaultSession } = require("../middlewares/auth");
+const { requireVaultSession, requireUserAuth } = require("../middlewares/auth");
 const {
   listCredentialsController,
   createCredentialController,
@@ -14,6 +14,7 @@ const {
 
 const router = express.Router();
 
+router.use(requireUserAuth);
 router.use(requireVaultSession);
 
 router.get("/", asyncHandler(listCredentialsController));

@@ -15,13 +15,20 @@ const buildUrl = (path, query) => {
   return url.toString();
 };
 
-const request = async (path, { method = "GET", token, body, query } = {}) => {
+const request = async (
+  path,
+  { method = "GET", accessToken, vaultToken, body, query } = {},
+) => {
   const headers = {
     "Content-Type": "application/json",
   };
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  if (vaultToken) {
+    headers["X-Vault-Token"] = vaultToken;
   }
 
   const response = await fetch(buildUrl(path, query), {
@@ -45,37 +52,89 @@ const request = async (path, { method = "GET", token, body, query } = {}) => {
 
 export const api = {
   health: () => request("/health"),
-  auth: {
-    status: (token) => request("/auth/status", { token }),
-    setup: ({ masterPassword, confirmMasterPassword }) =>
-      request("/auth/setup", {
+  account: {
+    signup: ({ email, password, confirmPassword }) =>
+      request("/account/signup", {
         method: "POST",
-        body: { masterPassword, confirmMasterPassword },
+        body: { email, password, confirmPassword },
       }),
-    unlock: ({ masterPassword }) =>
+    login: ({ email, password }) =>
+      request("/account/login", {
+        method: "POST",
+        body: { email, password },
+      }),
+    me: (accessToken) => request("/account/me", { accessToken }),
+    logout: (accessToken) =>
+      request("/account/logout", { method: "POST", accessToken }),
+    requestPasswordReset: ({ email }) =>
+      request("/account/password-reset/request", {
+        method: "POST",
+        body: { email },
+      }),
+    confirmPasswordReset: ({ token, password, confirmPassword }) =>
+      request("/account/password-reset/confirm", {
+        method: "POST",
+        body: { token, password, confirmPassword },
+      }),
+  },
+  auth: {
+    status: (accessToken, vaultToken) =>
+      request("/auth/status", { accessToken, vaultToken }),
+    unlock: (accessToken, { masterPassword }) =>
       request("/auth/unlock", {
         method: "POST",
+        accessToken,
         body: { masterPassword },
       }),
-    lock: (token) =>
+    setup: (accessToken, { masterPassword, confirmMasterPassword }) =>
+      request("/auth/setup", {
+        method: "POST",
+        accessToken,
+        body: { masterPassword, confirmMasterPassword },
+      }),
+    lock: (accessToken, vaultToken) =>
       request("/auth/lock", {
         method: "POST",
-        token,
+        accessToken,
+        vaultToken,
       }),
   },
   credentials: {
-    list: (token, query = {}) => request("/credentials", { token, query }),
-    create: (token, body) => request("/credentials", { method: "POST", token, body }),
-    update: (token, id, body) =>
-      request(`/credentials/${id}`, { method: "PUT", token, body }),
-    delete: (token, id) =>
-      request(`/credentials/${id}`, { method: "DELETE", token }),
-    secret: (token, id) => request(`/credentials/${id}/secret`, { token }),
-    touch: (token, id) => request(`/credentials/${id}/touch`, { method: "POST", token }),
-    importLegacy: (token, entries) =>
+    list: (accessToken, vaultToken, query = {}) =>
+      request("/credentials", { accessToken, vaultToken, query }),
+    create: (accessToken, vaultToken, body) =>
+      request("/credentials", {
+        method: "POST",
+        accessToken,
+        vaultToken,
+        body,
+      }),
+    update: (accessToken, vaultToken, id, body) =>
+      request(`/credentials/${id}`, {
+        method: "PUT",
+        accessToken,
+        vaultToken,
+        body,
+      }),
+    delete: (accessToken, vaultToken, id) =>
+      request(`/credentials/${id}`, {
+        method: "DELETE",
+        accessToken,
+        vaultToken,
+      }),
+    secret: (accessToken, vaultToken, id) =>
+      request(`/credentials/${id}/secret`, { accessToken, vaultToken }),
+    touch: (accessToken, vaultToken, id) =>
+      request(`/credentials/${id}/touch`, {
+        method: "POST",
+        accessToken,
+        vaultToken,
+      }),
+    importLegacy: (accessToken, vaultToken, entries) =>
       request("/credentials/import-legacy", {
         method: "POST",
-        token,
+        accessToken,
+        vaultToken,
         body: { entries },
       }),
   },

@@ -4,6 +4,7 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 const config = require("./config/env");
+const accountRoutes = require("./routes/accountRoutes");
 const authRoutes = require("./routes/authRoutes");
 const credentialRoutes = require("./routes/credentialRoutes");
 const { notFoundHandler } = require("./middlewares/notFound");
@@ -64,6 +65,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/account", accountRoutes);
 app.use("/api/v1/credentials", credentialRoutes);
 
 app.use(notFoundHandler);

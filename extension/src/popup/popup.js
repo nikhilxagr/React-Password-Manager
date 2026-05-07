@@ -2,17 +2,23 @@ import { normalizeDomain } from "../shared/domain.js";
 
 const els = {
   statusText: document.getElementById("statusText"),
+  accountEmail: document.getElementById("accountEmail"),
+  accountPanel: document.getElementById("accountPanel"),
+  accountForm: document.getElementById("accountForm"),
+  accountEmailInput: document.getElementById("accountEmailInput"),
+  accountPassword: document.getElementById("accountPassword"),
   unlockPanel: document.getElementById("unlockPanel"),
   actionsPanel: document.getElementById("actionsPanel"),
   matchesPanel: document.getElementById("matchesPanel"),
   unlockForm: document.getElementById("unlockForm"),
   masterPassword: document.getElementById("masterPassword"),
   lockVault: document.getElementById("lockVault"),
+  logoutAccount: document.getElementById("logoutAccount"),
   refreshMatches: document.getElementById("refreshMatches"),
   matchesList: document.getElementById("matchesList"),
   activeDomain: document.getElementById("activeDomain"),
   apiBase: document.getElementById("apiBase"),
-  saveApiBase: document.getElementById("saveApiBase")
+  saveApiBase: document.getElementById("saveApiBase"),
 };
 
 let currentDomain = "";
@@ -35,8 +41,17 @@ const sendMessage = (payload) => {
   });
 };
 
+const setAccountUi = (message) => {
+  els.statusText.textContent = message || "Login required in extension.";
+  els.accountPanel.classList.remove("hidden");
+  els.unlockPanel.classList.add("hidden");
+  els.actionsPanel.classList.add("hidden");
+  els.matchesPanel.classList.add("hidden");
+};
+
 const setLockedUi = (message) => {
   els.statusText.textContent = message || "Vault is locked in extension.";
+  els.accountPanel.classList.add("hidden");
   els.unlockPanel.classList.remove("hidden");
   els.actionsPanel.classList.add("hidden");
   els.matchesPanel.classList.add("hidden");
@@ -44,6 +59,7 @@ const setLockedUi = (message) => {
 
 const setUnlockedUi = (message) => {
   els.statusText.textContent = message || "Vault unlocked in extension.";
+  els.accountPanel.classList.add("hidden");
   els.unlockPanel.classList.add("hidden");
   els.actionsPanel.classList.remove("hidden");
   els.matchesPanel.classList.remove("hidden");
@@ -99,7 +115,7 @@ const refreshMatches = async () => {
 
   const result = await sendMessage({
     type: "credentials.byDomain",
-    domain: currentDomain
+    domain: currentDomain,
   });
 
   renderMatches(result.items || []);
@@ -113,7 +129,16 @@ const initialize = async () => {
       els.apiBase.value = status.apiBase;
     }
 
+    els.accountEmail.textContent = status.accountEmail
+      ? `Account: ${status.accountEmail}`
+      : "";
+
     await loadCurrentTabDomain();
+
+    if (!status.authenticated) {
+      setAccountUi();
+      return;
+    }
 
     if (!status.initialized) {
       setLockedUi("Vault not initialized in backend app yet.");
@@ -150,11 +175,39 @@ els.unlockForm.addEventListener("submit", async (event) => {
   }
 });
 
+els.accountForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const email = els.accountEmailInput.value.trim();
+  const password = els.accountPassword.value.trim();
+
+  if (!email || !password) {
+    return;
+  }
+
+  try {
+    await sendMessage({ type: "account.login", email, password });
+    els.accountPassword.value = "";
+    await initialize();
+  } catch (error) {
+    setAccountUi(error.message || "Login failed.");
+  }
+});
+
 els.lockVault.addEventListener("click", async () => {
   try {
     await sendMessage({ type: "vault.lock" });
   } finally {
     setLockedUi("Vault locked in extension.");
+  }
+});
+
+els.logoutAccount.addEventListener("click", async () => {
+  try {
+    await sendMessage({ type: "account.logout" });
+  } finally {
+    els.accountEmail.textContent = "";
+    setAccountUi("Logged out.");
   }
 });
 

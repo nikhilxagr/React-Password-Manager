@@ -10,7 +10,7 @@ const {
   normalizeString,
 } = require("../utils/validators");
 const { HttpError } = require("../utils/httpError");
-const { getBearerToken } = require("../middlewares/auth");
+const { getVaultToken } = require("../middlewares/auth");
 
 const setupVaultController = async (req, res) => {
   const masterPassword = normalizeString(req.body.masterPassword);
@@ -24,7 +24,7 @@ const setupVaultController = async (req, res) => {
     throw new HttpError(400, "Master password and confirmation do not match.");
   }
 
-  const result = await setupMasterPassword(masterPassword);
+  const result = await setupMasterPassword(req.user.id, masterPassword);
 
   return res.status(201).json({
     ok: true,
@@ -37,7 +37,7 @@ const unlockVaultController = async (req, res) => {
   const masterPassword = normalizeString(req.body.masterPassword);
   validateMasterPassword(masterPassword);
 
-  const data = await unlockVault(masterPassword);
+  const data = await unlockVault(req.user.id, masterPassword);
 
   return res.status(200).json({
     ok: true,
@@ -56,8 +56,8 @@ const lockVaultController = async (req, res) => {
 };
 
 const vaultStatusController = async (req, res) => {
-  const token = getBearerToken(req);
-  const data = await getVaultStatus(token);
+  const token = getVaultToken(req);
+  const data = await getVaultStatus(req.user.id, token);
 
   return res.status(200).json({
     ok: true,
@@ -66,7 +66,7 @@ const vaultStatusController = async (req, res) => {
 };
 
 const vaultKdfParamsController = async (_req, res) => {
-  const data = await getVaultKdfParams();
+  const data = await getVaultKdfParams(req.user.id);
 
   return res.status(200).json({
     ok: true,

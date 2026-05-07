@@ -14,6 +14,9 @@ const getCollection = () => getDb().collection(CREDENTIAL_COLLECTION);
 
 const ensureCredentialIndexes = async () => {
   const collection = getCollection();
+  await collection.createIndex({ userId: 1, updatedAt: -1 });
+  await collection.createIndex({ userId: 1, hostIndex: 1 });
+  await collection.createIndex({ userId: 1, registrableDomainIndex: 1 });
   await collection.createIndex({ site: 1 });
   await collection.createIndex({ host: 1 });
   await collection.createIndex({ registrableDomain: 1 });
@@ -71,6 +74,14 @@ const buildDomainMetadata = (site) => {
   };
 };
 
+const toUserObjectId = (id) => {
+  if (!ObjectId.isValid(id)) {
+    throw new HttpError(400, "Invalid user id.");
+  }
+
+  return new ObjectId(id);
+};
+
 const asObjectId = (id) => {
   if (!ObjectId.isValid(id)) {
     throw new HttpError(400, "Invalid credential id.");
@@ -125,24 +136,41 @@ const buildQuery = ({ search, favorite, tag, category }) => {
   return query;
 };
 
-const listCredentials = async ({ search, favorite, tag, category, sortBy, order }) => {
+const listCredentials = async (
+  userId,
+  { search, favorite, tag, category, sortBy, order },
+) => {
   const collection = getCollection();
-  const query = buildQuery({ search, favorite, tag, category });
+  const query = {
+    userId: toUserObjectId(userId),
+    ...buildQuery({ search, favorite, tag, category }),
+  };
 
-  const allowedSortFields = new Set(["site", "username", "createdAt", "updatedAt", "favorite"]);
+  const allowedSortFields = new Set([
+    "site",
+    "username",
+    "createdAt",
+    "updatedAt",
+    "favorite",
+  ]);
   const safeSortBy = allowedSortFields.has(sortBy) ? sortBy : "updatedAt";
   const safeOrder = order === "asc" ? 1 : -1;
 
-  const credentials = await collection.find(query).sort({ [safeSortBy]: safeOrder }).toArray();
+  const credentials = await collection
+    .find(query)
+    .sort({ [safeSortBy]: safeOrder })
+    .toArray();
   return credentials.map(toPublicCredential);
 };
 
-const createCredential = async (payload, vaultKey) => {
+const createCredential = async (userId, payload, vaultKey) => {
   const now = new Date();
   const encryptedPassword = encryptText(payload.password, vaultKey);
   const domainMeta = buildDomainMetadata(payload.site);
+  const objectId = toUserObjectId(userId);
 
   const doc = {
+    userId: objectId,
     site: payload.site,
     ...domainMeta,
     username: payload.username,
@@ -160,8 +188,9 @@ const createCredential = async (payload, vaultKey) => {
   return toPublicCredential({ ...doc, _id: result.insertedId });
 };
 
-const updateCredential = async (id, payload, vaultKey) => {
+const updateCredential = async (userId, id, payload, vaultKey) => {
   const objectId = asObjectId(id);
+  const userObjectId = toUserObjectId(userId);
   const updates = { updatedAt: new Date() };
 
   if (payload.site !== undefined) updates.site = payload.site;
@@ -169,7 +198,8 @@ const updateCredential = async (id, payload, vaultKey) => {
   if (payload.notes !== undefined) updates.notes = payload.notes;
   if (payload.tags !== undefined) updates.tags = payload.tags;
   if (payload.category !== undefined) updates.category = payload.category;
-  if (payload.favorite !== undefined) updates.favorite = Boolean(payload.favorite);
+  if (payload.favorite !== undefined)
+    updates.favorite = Boolean(payload.favorite);
 
   if (payload.password !== undefined) {
     updates.encryptedPassword = encryptText(payload.password, vaultKey);
@@ -188,7 +218,7 @@ const updateCredential = async (id, payload, vaultKey) => {
   }
 
   const result = await getCollection().findOneAndUpdate(
-    { _id: objectId },
+    { _id: objectId, userId: userObjectId },
     { $set: updates },
     { returnDocument: "after" },
   );
@@ -200,9 +230,13 @@ const updateCredential = async (id, payload, vaultKey) => {
   return toPublicCredential(result.value);
 };
 
-const deleteCredential = async (id) => {
+const deleteCredential = async (userId, id) => {
   const objectId = asObjectId(id);
-  const result = await getCollection().deleteOne({ _id: objectId });
+  const userObjectId = toUserObjectId(userId);
+  const result = await getCollection().deleteOne({
+    _id: objectId,
+    userId: userObjectId,
+  });
 
   if (result.deletedCount === 0) {
     throw new HttpError(404, "Credential not found.");
@@ -211,9 +245,13 @@ const deleteCredential = async (id) => {
   return true;
 };
 
-const getCredentialSecret = async (id, vaultKey) => {
+const getCredentialSecret = async (userId, id, vaultKey) => {
   const objectId = asObjectId(id);
-  const doc = await getCollection().findOne({ _id: objectId });
+  const userObjectId = toUserObjectId(userId);
+  const doc = await getCollection().findOne({
+    _id: objectId,
+    userId: userObjectId,
+  });
 
   if (!doc) {
     throw new HttpError(404, "Credential not found.");
@@ -226,11 +264,12 @@ const getCredentialSecret = async (id, vaultKey) => {
   };
 };
 
-const touchCredential = async (id) => {
+const touchCredential = async (userId, id) => {
   const objectId = asObjectId(id);
+  const userObjectId = toUserObjectId(userId);
 
   const result = await getCollection().findOneAndUpdate(
-    { _id: objectId },
+    { _id: objectId, userId: userObjectId },
     {
       $set: {
         lastUsedAt: new Date(),
@@ -247,17 +286,19 @@ const touchCredential = async (id) => {
   return toPublicCredential(result.value);
 };
 
-const listCredentialsByDomain = async (domain) => {
+const listCredentialsByDomain = async (userId, domain) => {
   const normalized = normalizeDomain(domain);
   if (!normalized) {
     throw new HttpError(400, "A valid domain is required.");
   }
 
   const collection = getCollection();
+  const userObjectId = toUserObjectId(userId);
   const hostIndex = hashBlindIndex(normalized.host);
   const registrableDomainIndex = hashBlindIndex(normalized.registrableDomain);
 
   const query = {
+    userId: userObjectId,
     $or: [
       { host: normalized.host },
       { registrableDomain: normalized.registrableDomain },
@@ -266,15 +307,21 @@ const listCredentialsByDomain = async (domain) => {
     ],
   };
 
-  let docs = await collection.find(query).sort({ favorite: -1, updatedAt: -1 }).toArray();
+  let docs = await collection
+    .find(query)
+    .sort({ favorite: -1, updatedAt: -1 })
+    .toArray();
 
   if (docs.length === 0) {
     const escapedHost = escapeRegExp(normalized.host);
     const escapedDomain = escapeRegExp(normalized.registrableDomain);
-    const fallbackRegex = new RegExp(`(https?:\\/\\/)?([^.]+\\.)*(${escapedHost}|${escapedDomain})(:\\d+)?(\\/|$)`, "i");
+    const fallbackRegex = new RegExp(
+      `(https?:\\/\\/)?([^.]+\\.)*(${escapedHost}|${escapedDomain})(:\\d+)?(\\/|$)`,
+      "i",
+    );
 
     docs = await collection
-      .find({ site: fallbackRegex })
+      .find({ userId: userObjectId, site: fallbackRegex })
       .sort({ favorite: -1, updatedAt: -1 })
       .limit(20)
       .toArray();
@@ -283,20 +330,25 @@ const listCredentialsByDomain = async (domain) => {
   return docs.map(toExtensionCredential);
 };
 
-const importLegacyCredentials = async (entries, vaultKey) => {
+const importLegacyCredentials = async (userId, entries, vaultKey) => {
   if (!Array.isArray(entries) || entries.length === 0) {
     throw new HttpError(400, "entries must be a non-empty array.");
   }
 
   if (entries.length > 500) {
-    throw new HttpError(400, "Import limit exceeded. Max 500 entries per request.");
+    throw new HttpError(
+      400,
+      "Import limit exceeded. Max 500 entries per request.",
+    );
   }
 
   const now = new Date();
+  const userObjectId = toUserObjectId(userId);
   const docs = entries.map((entry) => {
     const domainMeta = buildDomainMetadata(entry.site);
 
     return {
+      userId: userObjectId,
       site: entry.site,
       ...domainMeta,
       username: entry.username,

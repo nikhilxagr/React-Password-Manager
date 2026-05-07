@@ -11,7 +11,7 @@ const {
 const { validateCredentialPayload } = require("../utils/validators");
 
 const listCredentialsController = async (req, res) => {
-  const data = await listCredentials(req.query);
+  const data = await listCredentials(req.user.id, req.query);
 
   return res.status(200).json({
     ok: true,
@@ -21,7 +21,7 @@ const listCredentialsController = async (req, res) => {
 
 const createCredentialController = async (req, res) => {
   const payload = validateCredentialPayload(req.body, { partial: false });
-  const data = await createCredential(payload, req.vaultKey);
+  const data = await createCredential(req.user.id, payload, req.vaultKey);
 
   return res.status(201).json({
     ok: true,
@@ -32,7 +32,12 @@ const createCredentialController = async (req, res) => {
 
 const updateCredentialController = async (req, res) => {
   const payload = validateCredentialPayload(req.body, { partial: true });
-  const data = await updateCredential(req.params.id, payload, req.vaultKey);
+  const data = await updateCredential(
+    req.user.id,
+    req.params.id,
+    payload,
+    req.vaultKey,
+  );
 
   return res.status(200).json({
     ok: true,
@@ -42,7 +47,7 @@ const updateCredentialController = async (req, res) => {
 };
 
 const deleteCredentialController = async (req, res) => {
-  await deleteCredential(req.params.id);
+  await deleteCredential(req.user.id, req.params.id);
 
   return res.status(200).json({
     ok: true,
@@ -51,7 +56,11 @@ const deleteCredentialController = async (req, res) => {
 };
 
 const credentialSecretController = async (req, res) => {
-  const data = await getCredentialSecret(req.params.id, req.vaultKey);
+  const data = await getCredentialSecret(
+    req.user.id,
+    req.params.id,
+    req.vaultKey,
+  );
 
   return res.status(200).json({
     ok: true,
@@ -60,7 +69,7 @@ const credentialSecretController = async (req, res) => {
 };
 
 const touchCredentialController = async (req, res) => {
-  const data = await touchCredential(req.params.id);
+  const data = await touchCredential(req.user.id, req.params.id);
 
   return res.status(200).json({
     ok: true,
@@ -69,7 +78,7 @@ const touchCredentialController = async (req, res) => {
 };
 
 const domainCredentialsController = async (req, res) => {
-  const data = await listCredentialsByDomain(req.params.domain);
+  const data = await listCredentialsByDomain(req.user.id, req.params.domain);
 
   return res.status(200).json({
     ok: true,
@@ -84,7 +93,11 @@ const importLegacyController = async (req, res) => {
       )
     : [];
 
-  const importedCount = await importLegacyCredentials(entries, req.vaultKey);
+  const importedCount = await importLegacyCredentials(
+    req.user.id,
+    entries,
+    req.vaultKey,
+  );
 
   return res.status(201).json({
     ok: true,

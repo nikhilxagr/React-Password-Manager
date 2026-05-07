@@ -1,3 +1,4 @@
+const { ObjectId } = require("mongodb");
 const config = require("../config/env");
 const { getDb } = require("../config/db");
 const { HttpError } = require("../utils/httpError");
@@ -14,13 +15,20 @@ const {
 } = require("../utils/crypto");
 
 const VAULT_META_COLLECTION = "vault_meta";
-const VAULT_META_ID = "singleton";
 
 const sessions = new Map();
 
 const getMetaCollection = () => getDb().collection(VAULT_META_COLLECTION);
 
 const sessionTtlMs = () => config.SESSION_TTL_MINUTES * 60 * 1000;
+
+const toObjectId = (value) => {
+  if (!ObjectId.isValid(value)) {
+    throw new HttpError(400, "Invalid user id.");
+  }
+
+  return new ObjectId(value);
+};
 
 const getArgon2KdfParams = () => {
   return {
@@ -50,12 +58,13 @@ const cleanupExpiredSessions = () => {
   }
 };
 
-const getVaultMetadata = async () => {
-  return getMetaCollection().findOne({ _id: VAULT_META_ID });
+const getVaultMetadata = async (userId) => {
+  const objectId = toObjectId(userId);
+  return getMetaCollection().findOne({ userId: objectId });
 };
 
-const ensureVaultMetadata = async () => {
-  const metadata = await getVaultMetadata();
+const ensureVaultMetadata = async (userId) => {
+  const metadata = await getVaultMetadata(userId);
   if (!metadata) {
     throw new HttpError(
       404,
@@ -86,14 +95,15 @@ const getMetadataKdfConfig = (metadata) => {
   throw new HttpError(500, "Vault metadata is missing KDF configuration.");
 };
 
-const migrateLegacyKdf = async (masterPassword, vaultKey) => {
+const migrateLegacyKdf = async (userId, masterPassword, vaultKey) => {
+  const objectId = toObjectId(userId);
   const nextKdf = buildVaultKdfConfig();
   const nextPasswordHash = await hashPassword(masterPassword, nextKdf);
   const nextKeyEncryptionKey = await deriveKey(masterPassword, nextKdf);
   const nextWrappedVaultKey = encryptBuffer(vaultKey, nextKeyEncryptionKey);
 
   await getMetaCollection().updateOne(
-    { _id: VAULT_META_ID },
+    { userId: objectId },
     {
       $set: {
         kdf: nextKdf,
@@ -109,20 +119,23 @@ const migrateLegacyKdf = async (masterPassword, vaultKey) => {
 };
 
 const ensureVaultIndexes = async () => {
-  await getMetaCollection().createIndex({ updatedAt: -1 });
+  const collection = getMetaCollection();
+  await collection.createIndex({ userId: 1 }, { unique: true });
+  await collection.createIndex({ updatedAt: -1 });
 };
 
-const isVaultInitialized = async () => {
-  const metadata = await getVaultMetadata();
+const isVaultInitialized = async (userId) => {
+  const metadata = await getVaultMetadata(userId);
   return Boolean(metadata);
 };
 
-const setupMasterPassword = async (masterPassword) => {
-  const metadata = await getVaultMetadata();
+const setupMasterPassword = async (userId, masterPassword) => {
+  const metadata = await getVaultMetadata(userId);
   if (metadata) {
     throw new HttpError(409, "Vault is already initialized.");
   }
 
+  const objectId = toObjectId(userId);
   const kdf = buildVaultKdfConfig();
   const passwordHash = await hashPassword(masterPassword, kdf);
   const keyEncryptionKey = await deriveKey(masterPassword, kdf);
@@ -131,7 +144,7 @@ const setupMasterPassword = async (masterPassword) => {
   const now = new Date();
 
   await getMetaCollection().insertOne({
-    _id: VAULT_META_ID,
+    userId: objectId,
     kdf,
     passwordHash,
     wrappedVaultKey,
@@ -145,8 +158,8 @@ const setupMasterPassword = async (masterPassword) => {
   };
 };
 
-const unlockVault = async (masterPassword) => {
-  const metadata = await ensureVaultMetadata();
+const unlockVault = async (userId, masterPassword) => {
+  const metadata = await ensureVaultMetadata(userId);
   const kdf = getMetadataKdfConfig(metadata);
   const computedHash = await hashPassword(masterPassword, kdf);
 
@@ -159,7 +172,7 @@ const unlockVault = async (masterPassword) => {
 
   if (kdf.algorithm === KDF_ALGORITHM_SCRYPT) {
     // Opportunistic migration keeps legacy users working while upgrading KDF posture.
-    migrateLegacyKdf(masterPassword, vaultKey).catch((error) => {
+    migrateLegacyKdf(userId, masterPassword, vaultKey).catch((error) => {
       console.warn("Legacy vault KDF migration failed:", error.message);
     });
   }
@@ -171,6 +184,7 @@ const unlockVault = async (masterPassword) => {
     vaultKey,
     expiresAt,
     createdAt: Date.now(),
+    userId,
   });
 
   return {
@@ -179,7 +193,7 @@ const unlockVault = async (masterPassword) => {
   };
 };
 
-const getSession = (token) => {
+const getSession = (token, userId) => {
   if (!token) {
     return null;
   }
@@ -188,6 +202,10 @@ const getSession = (token) => {
   const session = sessions.get(token);
 
   if (!session) {
+    return null;
+  }
+
+  if (userId && session.userId !== userId) {
     return null;
   }
 
@@ -209,10 +227,10 @@ const lockSession = (token) => {
   return sessions.delete(token);
 };
 
-const getVaultStatus = async (token) => {
+const getVaultStatus = async (userId, token) => {
   cleanupExpiredSessions();
-  const initialized = await isVaultInitialized();
-  const unlocked = token ? Boolean(getSession(token)) : sessions.size > 0;
+  const initialized = await isVaultInitialized(userId);
+  const unlocked = token ? Boolean(getSession(token, userId)) : false;
 
   return {
     initialized,
@@ -220,8 +238,8 @@ const getVaultStatus = async (token) => {
   };
 };
 
-const getVaultKdfParams = async () => {
-  const metadata = await getVaultMetadata();
+const getVaultKdfParams = async (userId) => {
+  const metadata = await getVaultMetadata(userId);
 
   if (metadata?.kdf?.algorithm === KDF_ALGORITHM_ARGON2ID) {
     return {

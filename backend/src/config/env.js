@@ -20,6 +20,22 @@ const toPositiveInt = (value, fallback) => {
   return parsed > 0 ? parsed : fallback;
 };
 
+const toBoolean = (value, fallback = false) => {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+
+  if (value === true || value === "true") {
+    return true;
+  }
+
+  if (value === false || value === "false") {
+    return false;
+  }
+
+  return fallback;
+};
+
 const config = {
   NODE_ENV: process.env.NODE_ENV || "development",
   PORT: toInt(process.env.PORT, 3000),
@@ -34,6 +50,20 @@ const config = {
     process.env.ALLOW_CHROME_EXTENSION_ORIGINS !== "false",
   BLIND_INDEX_KEY:
     process.env.BLIND_INDEX_KEY || "dev-blind-index-key-change-me",
+  JWT_SECRET: getRequired("JWT_SECRET"),
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
+  JWT_ISSUER: process.env.JWT_ISSUER || "vaultguard",
+  PASSWORD_RESET_TOKEN_TTL_MINUTES: toPositiveInt(
+    process.env.PASSWORD_RESET_TOKEN_TTL_MINUTES,
+    30,
+  ),
+  APP_BASE_URL: process.env.APP_BASE_URL || "http://localhost:5173",
+  SMTP_HOST: process.env.SMTP_HOST || "",
+  SMTP_PORT: toPositiveInt(process.env.SMTP_PORT, 587),
+  SMTP_SECURE: toBoolean(process.env.SMTP_SECURE, false),
+  SMTP_USER: process.env.SMTP_USER || "",
+  SMTP_PASS: process.env.SMTP_PASS || "",
+  SMTP_FROM: process.env.SMTP_FROM || "",
   ARGON2_TIME_COST: toPositiveInt(process.env.ARGON2_TIME_COST, 3),
   ARGON2_MEMORY_COST_KIB: toPositiveInt(
     process.env.ARGON2_MEMORY_COST_KIB,

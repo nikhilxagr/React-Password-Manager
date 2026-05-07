@@ -1,8 +1,10 @@
 const { HttpError } = require("./httpError");
 
-const isNonEmptyString = (value) => typeof value === "string" && value.trim().length > 0;
+const isNonEmptyString = (value) =>
+  typeof value === "string" && value.trim().length > 0;
 
-const normalizeString = (value) => (typeof value === "string" ? value.trim() : "");
+const normalizeString = (value) =>
+  typeof value === "string" ? value.trim() : "";
 
 const normalizeTags = (tags) => {
   if (!Array.isArray(tags)) {
@@ -28,9 +30,27 @@ const normalizeUrl = (url) => {
   return `https://${candidate}`;
 };
 
+const validateEmail = (email) => {
+  const normalized = normalizeString(email).toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!normalized || !emailRegex.test(normalized)) {
+    throw new HttpError(400, "A valid email address is required.");
+  }
+};
+
+const validateAccountPassword = (password) => {
+  if (!isNonEmptyString(password) || password.trim().length < 8) {
+    throw new HttpError(400, "Password must be at least 8 characters long.");
+  }
+};
+
 const validateMasterPassword = (password) => {
   if (!isNonEmptyString(password) || password.trim().length < 8) {
-    throw new HttpError(400, "Master password must be at least 8 characters long.");
+    throw new HttpError(
+      400,
+      "Master password must be at least 8 characters long.",
+    );
   }
 };
 
@@ -46,7 +66,16 @@ const validateCredentialPayload = (payload, { partial = false } = {}) => {
   const hasCategory = Object.prototype.hasOwnProperty.call(payload, "category");
   const hasFavorite = Object.prototype.hasOwnProperty.call(payload, "favorite");
 
-  if (partial && !hasSite && !hasUsername && !hasPassword && !hasNotes && !hasTags && !hasCategory && !hasFavorite) {
+  if (
+    partial &&
+    !hasSite &&
+    !hasUsername &&
+    !hasPassword &&
+    !hasNotes &&
+    !hasTags &&
+    !hasCategory &&
+    !hasFavorite
+  ) {
     throw new HttpError(400, "No fields provided for update.");
   }
 
@@ -111,6 +140,8 @@ const validateCredentialPayload = (payload, { partial = false } = {}) => {
 };
 
 module.exports = {
+  validateEmail,
+  validateAccountPassword,
   validateMasterPassword,
   validateCredentialPayload,
   normalizeTags,

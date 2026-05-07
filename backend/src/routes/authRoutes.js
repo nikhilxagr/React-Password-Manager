@@ -1,6 +1,6 @@
 const express = require("express");
 const { asyncHandler } = require("../middlewares/asyncHandler");
-const { requireVaultSession } = require("../middlewares/auth");
+const { requireVaultSession, requireUserAuth } = require("../middlewares/auth");
 const {
   setupVaultController,
   unlockVaultController,
@@ -10,6 +10,8 @@ const {
 } = require("../controllers/authController");
 
 const router = express.Router();
+
+router.use(requireUserAuth);
 
 router.get("/status", asyncHandler(vaultStatusController));
 router.get("/kdf-params", asyncHandler(vaultKdfParamsController));

@@ -14,6 +14,7 @@
             <p class="eyebrow">PassMongo</p>
             <h1>Vault Control</h1>
             <p id="statusText">Checking vault status...</p>
+            <p id="accountEmail"></p>
         </header>
 
         <section class="panel">
@@ -22,6 +23,17 @@
                 <input id="apiBase" type="text" placeholder="http://localhost:3000/api/v1" />
                 <button id="saveApiBase" type="button">Save</button>
             </div>
+        </section>
+
+        <section class="panel" id="accountPanel">
+            <form id="accountForm">
+                <label for="accountEmailInput">Account email</label>
+                <input id="accountEmailInput" type="email" required />
+                <label for="accountPassword">Account password</label>
+                <input id="accountPassword" type="password" minlength="8" required />
+                <button type="submit">Login</button>
+                <p class="hint">Create your account in the web app if needed.</p>
+            </form>
         </section>
 
         <section class="panel" id="unlockPanel">
@@ -37,6 +49,7 @@
             <div class="row">
                 <button id="refreshMatches" type="button">Refresh Matches</button>
                 <button id="lockVault" type="button" class="danger">Lock</button>
+                <button id="logoutAccount" type="button" class="danger">Logout</button>
             </div>
         </section>
 

@@ -1,6 +1,7 @@
 const config = require("./src/config/env");
 const { app } = require("./src/app");
 const { connectDb, closeDb } = require("./src/config/db");
+const { ensureUserIndexes } = require("./src/services/accountService");
 const { ensureVaultIndexes } = require("./src/services/vaultService");
 const { ensureCredentialIndexes } = require("./src/services/credentialService");
 
@@ -17,7 +18,11 @@ const shutdown = async () => {
 
 const bootstrap = async () => {
   await connectDb();
-  await Promise.all([ensureVaultIndexes(), ensureCredentialIndexes()]);
+  await Promise.all([
+    ensureUserIndexes(),
+    ensureVaultIndexes(),
+    ensureCredentialIndexes(),
+  ]);
 
   server = app.listen(config.PORT, () => {
     console.log(`Backend running on http://localhost:${config.PORT}`);
