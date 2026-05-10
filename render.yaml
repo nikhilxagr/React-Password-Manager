@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: vaultguard-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: BLIND_INDEX_KEY
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+      - key: ALLOW_CHROME_EXTENSION_ORIGINS
+        value: "true"
