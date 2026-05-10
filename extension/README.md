@@ -10,6 +10,11 @@ This folder contains a Manifest v3 extension scaffold for browser autofill.
 - Fill username and password using vault secret retrieval endpoint
 - Prompt to save submitted credentials back to vault
 
+## Live Backend
+
+- Render: https://vaultgaurd-credential-manager.onrender.com
+- API base: https://vaultgaurd-credential-manager.onrender.com/api/v1
+
 ## Load in Chrome
 
 1. Open `chrome://extensions`

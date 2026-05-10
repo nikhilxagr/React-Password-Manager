@@ -11,6 +11,11 @@ Express API for the encrypted password vault.
 - Credential CRUD, secret reveal endpoint, legacy import endpoint
 - Domain lookup endpoint for extension autofill (`GET /api/v1/credentials/domain/:domain`)
 
+## Live URL
+
+- Render: https://vaultgaurd-credential-manager.onrender.com
+- API base: https://vaultgaurd-credential-manager.onrender.com/api/v1
+
 ## Environment
 
 See `.env.example`.

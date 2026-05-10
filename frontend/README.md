@@ -11,6 +11,10 @@ React + Vite frontend for the password manager.
 - Reveal password on demand (via secure API endpoint)
 - One-time import from legacy browser `localStorage`
 
+## Live URL
+
+- Vercel: https://vault-gaurd-credential-manager.vercel.app/
+
 ## Environment
 
 Create `.env` from `.env.example`:

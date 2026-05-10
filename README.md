@@ -14,13 +14,19 @@
 		<img src="https://img.shields.io/badge/Chrome_Extension-MV3-4285f4?style=flat-square" alt="Chrome MV3" />
 	</p>
 	<p>
-		<a href="#features">Features</a> | <a href="#tech-stack">Tech Stack</a> | <a href="#local-development">Local Development</a>
+		<a href="#live-urls">Live URLs</a> | <a href="#features">Features</a> | <a href="#tech-stack">Tech Stack</a> | <a href="#local-development">Local Development</a>
 	</p>
 </div>
 
 ## Overview
 
 VaultGuard Credential Manager is a single-user password vault with encrypted storage, session-based unlock, and an optional browser extension for domain-aware autofill. The Chrome companion is currently named PassMongo Autofill and uses the backend domain lookup endpoints.
+
+## Live URLs
+
+- Frontend (Vercel): https://vault-gaurd-credential-manager.vercel.app/
+- Backend (Render): https://vaultgaurd-credential-manager.onrender.com
+- API base: https://vaultgaurd-credential-manager.onrender.com/api/v1
 
 ## Features
 
@@ -129,5 +135,5 @@ Frontend `.env`:
 
 ## Deployment
 
-- Backend: Render config in `render.yaml`
-- Frontend: Vercel config in `frontend/vercel.json`
+- Backend (Render): https://vaultgaurd-credential-manager.onrender.com (config: `render.yaml`)
+- Frontend (Vercel): https://vault-gaurd-credential-manager.vercel.app/ (config: `frontend/vercel.json`)
