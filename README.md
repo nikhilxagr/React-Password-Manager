@@ -1,22 +1,79 @@
-# React Password Manager
+<div align="center">
+	<img
+		src="https://capsule-render.vercel.app/api?type=waving&height=200&section=header&text=VaultGuard%20Credential%20Manager&fontSize=36&fontAlignY=35&fontColor=ffffff&color=0:0f2027,50:203a43,100:2c5364&animation=twinkling"
+		alt="VaultGuard Credential Manager"
+	/>
+	<p>
+		Secure credential vault with a React + Vite dashboard, Express + MongoDB API, and a Chrome MV3 autofill companion.
+	</p>
+	<p>
+		<img src="https://img.shields.io/badge/React-19-61dafb?style=flat-square" alt="React 19" />
+		<img src="https://img.shields.io/badge/Vite-7-646cff?style=flat-square" alt="Vite 7" />
+		<img src="https://img.shields.io/badge/Express-4-000000?style=flat-square" alt="Express 4" />
+		<img src="https://img.shields.io/badge/MongoDB-7-47a248?style=flat-square" alt="MongoDB Driver 7" />
+		<img src="https://img.shields.io/badge/Chrome_Extension-MV3-4285f4?style=flat-square" alt="Chrome MV3" />
+	</p>
+	<p>
+		<a href="#features">Features</a> | <a href="#tech-stack">Tech Stack</a> | <a href="#local-development">Local Development</a>
+	</p>
+</div>
 
-This repository is now organized into two primary folders:
+## Overview
 
-- `frontend`: React + Vite client UI
-- `backend`: Express + MongoDB API with encrypted credential storage
-- `extension`: Chrome Manifest v3 autofill companion (MVP)
+VaultGuard Credential Manager is a single-user password vault with encrypted storage, session-based unlock, and an optional browser extension for domain-aware autofill. The Chrome companion is currently named PassMongo Autofill and uses the backend domain lookup endpoints.
 
-## Highlights
+## Features
 
-- Single-user vault with master password setup + unlock flow
-- Session-based lock/unlock with inactivity timeout
-- Passwords encrypted at rest using AES-256-GCM
-- Credential CRUD with search, category filters, favorites, and notes
-- Domain-aware credential lookup endpoint for browser autofill
+- Master password setup with unlock and lock flow
+- Session TTL and inactivity timeout
+- AES-256-GCM encryption for secrets at rest
+- Credential CRUD with search, categories, favorites, and notes
+- Domain lookup endpoint for extension autofill
 - Legacy import from previous `localStorage` passwords
-- Professional, responsive dashboard-style UI
+- Responsive, dashboard-style UI
 
-## Run Locally
+## Tech Stack
+
+### Frontend
+
+- React 19 + React DOM
+- Vite 7 build system
+- Tailwind CSS, PostCSS, Autoprefixer
+- React Toastify notifications
+- ESLint 9
+
+### Backend
+
+- Node.js + Express 4
+- MongoDB Node Driver 7
+- Argon2 for key derivation and hashing
+- JWT-based session tokens
+- Security middleware: Helmet, CORS, Express Rate Limit
+- Nodemailer for email delivery
+- Morgan request logging
+- tldts for domain parsing
+
+### Browser Extension
+
+- Chrome Extension Manifest v3
+- Service worker background + content scripts
+- Popup UI for unlock and suggestions
+
+### Security Primitives
+
+- AES-256-GCM encryption at rest
+- Argon2 parameters configurable via env
+- Blind index for domain matching
+
+## Project Structure
+
+```
+backend/    Express API + vault services
+frontend/   React dashboard
+extension/  Chrome MV3 autofill companion
+```
+
+## Local Development
 
 ### 1) Backend
 
@@ -36,10 +93,10 @@ npm install
 npm run dev
 ```
 
-By default:
+Defaults:
 
-- Backend runs on `http://localhost:3000`
-- Frontend runs on `http://localhost:5173`
+- Backend: `http://localhost:3000`
+- Frontend: `http://localhost:5173`
 
 ### 3) Browser Extension (MVP)
 
@@ -48,16 +105,29 @@ By default:
 3. Click Load unpacked
 4. Select the `extension` folder
 
-The extension popup can unlock the vault and query domain matches for the active tab.
+The popup can unlock the vault and fetch domain matches for the active tab.
 
-## Backend Extension Settings
+## Environment Variables
 
-In `backend/.env`:
+Backend `.env` is required. The most important keys for local dev are:
 
-- `ALLOW_CHROME_EXTENSION_ORIGINS=true` for local extension requests
-- `EXTENSION_ORIGINS=` optional comma-separated explicit allowlist
-- `BLIND_INDEX_KEY=` secret used to hash domain indexes
+- `MONGO_URI`, `DB_NAME`, `PORT`
+- `CLIENT_ORIGIN`, `APP_BASE_URL`
+- `JWT_SECRET`, `JWT_ISSUER`, `JWT_EXPIRES_IN`
+- `BLIND_INDEX_KEY`
+- `ALLOW_CHROME_EXTENSION_ORIGINS` and optional `EXTENSION_ORIGINS`
 
-## Migration Note
+Frontend `.env`:
 
-If the browser still has old `localStorage` key `passwords`, the dashboard shows an import option after unlocking the new vault.
+- `VITE_API_BASE_URL=http://localhost:3000/api/v1`
+
+## Notes
+
+- Keep `ALLOW_CHROME_EXTENSION_ORIGINS=true` in backend env for local extension calls.
+- Initialize the vault in the web app before using the extension.
+- The dashboard surfaces a one-time import if old `localStorage` passwords are present.
+
+## Deployment
+
+- Backend: Render config in `render.yaml`
+- Frontend: Vercel config in `frontend/vercel.json`
